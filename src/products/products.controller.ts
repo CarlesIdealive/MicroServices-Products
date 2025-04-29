@@ -5,7 +5,8 @@ import {
   Body, 
   Patch, 
   Param, 
-  Delete 
+  Delete, 
+  Query
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
@@ -23,8 +24,7 @@ export class ProductsController {
   }
 
   @Get()
-  findAll() {
-    const paginationDto = new PaginationDto();
+  findAll( @Query() paginationDto: PaginationDto) {
     return this.productsService.findAll({
       take: paginationDto.take,
       skip: paginationDto.skip
@@ -33,9 +33,9 @@ export class ProductsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.productsService.findOne({
-      id: Number(id)
-    });
+    return this.productsService.findOne(
+      Number(id)
+    );
   }
 
   @Patch(':id')
