@@ -1,16 +1,11 @@
 import { 
   Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query
+  ParseIntPipe
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PaginationDto } from 'src/shared/dtos/pagination.dto';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 
 
@@ -18,37 +13,42 @@ import { PaginationDto } from 'src/shared/dtos/pagination.dto';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Post()
-  create(@Body() createProductDto: CreateProductDto) {
+  @MessagePattern({ cmd: 'create'})
+  create(@Payload() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
 
-  @Get()
-  findAll( @Query() paginationDto: PaginationDto) {
+  // @Get()
+  @MessagePattern({ cmd: 'find_all'})
+  findAll( @Payload() paginationDto: PaginationDto) {
     return this.productsService.findAll({
       take: paginationDto.take,
       skip: paginationDto.skip
     });
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(
-      Number(id)
-    );
+  // @Get(':id')
+  @MessagePattern({ cmd: 'find_one'})
+  findOne(@Payload('id', ParseIntPipe) id: number) {
+    return this.productsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+  // @Patch(':id')
+  @MessagePattern({ cmd: 'update'})
+  update(
+    @Payload() updateProductDto: UpdateProductDto
+  ) {
+    const { id } = updateProductDto;
     return this.productsService.update({
-      where: { id: Number(id)},
+      where: { id: id},
       data: updateProductDto
     });
   }
 
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productsService.remove({id: Number(id)});
+  // @Delete(':id')
+  @MessagePattern({ cmd: 'remove'})
+  remove(@Payload('id', ParseIntPipe) id: number) {
+    return this.productsService.remove({id: id});
   }
 }
