@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { Prisma, Product } from 'generated/prisma/client';
 
 import { PrismaService } from 'src/services/services';
@@ -15,9 +16,18 @@ export class ProductsService{
 
 
   async create(data: Prisma.ProductCreateInput) : Promise<Product> {
-    return this.prismaService.product.create({
-      data,
-    });
+    try {
+
+      return this.prismaService.product.create({
+        data,
+      });
+      
+    } catch (error) {
+      throw new RpcException({
+        message: `Creation product error: ${error.message}`, 
+        status: HttpStatus.BAD_REQUEST
+      });
+    }
   }
 
 
@@ -49,9 +59,18 @@ export class ProductsService{
 
 
   async findOne(id: number) : Promise<Product | null> {
-    return this.prismaService.product.findUnique({
+    // const product =  this.prismaService.product.findUnique({
+    //   where: { id: id, available: true },
+    // })
+    const product = await this.prismaService.product.findFirst({
       where: { id: id, available: true },
-    })
+    });
+    if (!product)
+      throw new RpcException({
+        message: `Product with id ${id} not found`, 
+        status: HttpStatus.BAD_REQUEST
+      });
+    return product;
   }
 
 
@@ -60,25 +79,40 @@ export class ProductsService{
     data: Prisma.ProductUpdateInput
   }) : Promise<Product> 
   {
-    const { where, data } = params;
-    return await this.prismaService.product.update({
-      data,
-      where
-    });
+    try {
+      
+      const { where, data } = params;
+      return await this.prismaService.product.update({
+        data,
+        where: { ...where, available: true }, // Filter only available products
+      });
+
+    } catch (error) {
+      throw new RpcException({
+        message: `Update product error: ${error.message}`, 
+        status: HttpStatus.BAD_REQUEST
+      });
+    }
   }
 
 
   async remove(where: Prisma.ProductWhereUniqueInput) : Promise<Product> {
-    // return this.prismaService.product.delete({
-    //   where
-    // });
-    const product = await this.prismaService.product.update({
-      where,
-      data: {
-        available: false 
-      },
-    });
-    return product;
+    try {
+
+      const product = await this.prismaService.product.update({
+        where,
+        data: {
+          available: false 
+        },
+      });
+      return product;
+      
+    } catch (error) {
+      throw new RpcException({
+        message: `Remove product error: ${error.message}`, 
+        status: HttpStatus.BAD_REQUEST
+      });
+    }
   }
 
 
