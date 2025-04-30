@@ -116,5 +116,24 @@ export class ProductsService{
   }
 
 
+  async validateProductsId( ids: number[] ) : Promise<Product[]> {
+    //Eliminar ids duplicados
+    ids = [...new Set(ids)];
+
+    const products = await this.prismaService.product.findMany({
+      where: { id: { in: ids }, available: true },
+    });
+
+    if (products.length !== ids.length) {
+      throw new RpcException({
+        message: `Some products where not found`,
+        status: HttpStatus.BAD_REQUEST
+      });
+    }
+
+    return products;
+
+  }
+
 
 }
